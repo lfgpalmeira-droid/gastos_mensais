@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Completo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para os Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media print {
+            body { background: white !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <header class="mb-8 text-center flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-xl shadow-md no-print">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Controle Financeiro Pessoal</h1>
+                <p class="text-slate-600 text-sm">Ganhos, Gastos, Parcelados, Repetitivos e Gerenciamento de Categorias</p>
+            </div>
+            <!-- Backup, Restaurar e Gerenciar Categorias -->
+            <div class="mt-4 md:mt-0 flex flex-wrap gap-2 justify-center">
+                <button onclick="abrirModalCategorias()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">🏷️ Gerenciar Ramos</button>
+                <button onclick="fazerBackup()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition">💾 Baixar Backup</button>
+                <label class="bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-300 transition cursor-pointer">
+                    📂 Restaurar <input type="file" id="inputBackup" accept=".json" class="hidden" onchange="restaurarBackup(event)">
+                </label>
+            </div>
+        </header>
+
+        <!-- Grade de Formulários -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 no-print">
+            
+            <!-- Formulário de Ganhos -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-emerald-600">+ Adicionar Ganho</h2>
+                <form id="formGanho" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Descrição</label>
+                        <input type="text" id="descGanho" required placeholder="Ex: Salário, Freelance" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Valor (R$)</label>
+                            <input type="number" step="0.01" id="valorGanho" required placeholder="0,00" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Tipo de Lançamento</label>
+                            <select id="tipoGanho" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" onchange="toggleOpcoesGanho()">
+                                <option value="unico">Único / À Vista</option>
+                                <option value="repetitivo">Repetitivo (Mesmo valor)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div id="divQtdGanho" class="hidden">
+                            <label class="block text-sm font-medium text-slate-700">Qtd. Meses (Max 24)</label>
+                            <input type="number" id="qtdMesesGanho" min="2" max="24" value="2" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Mês Inicial / Referência</label>
+                            <input type="month" id="mesGanho" required class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 text-white p-2 rounded-lg font-semibold hover:bg-emerald-700 transition">Salvar Ganho</button>
+                </form>
+            </div>
+
+            <!-- Formulário de Gastos -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-rose-600">- Adicionar Gasto</h2>
+                <form id="formGasto" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Descrição</label>
+                        <input type="text" id="descGasto" required placeholder="Ex: Supermercado, Aluguel" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Valor (R$)</label>
+                            <input type="number" step="0.01" id="valorGasto" required placeholder="0,00" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Ramo / Categoria</label>
+                            <select id="ramoGasto" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                                <!-- Preenchido via JS -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Tipo de Lançamento</label>
+                            <select id="tipoGasto" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none" onchange="toggleOpcoesGasto()">
+                                <option value="unico">À Vista / Único</option>
+                                <option value="parcelado">Parcelado (Divide o valor)</option>
+                                <option value="repetitivo">Repetitivo (Mesmo valor)</option>
+                            </select>
+                        </div>
+                        <div id="divQtd" class="hidden">
+                            <label id="labelQtd" class="block text-sm font-medium text-slate-700">Qtd. Meses</label>
+                            <input type="number" id="qtdMeses" min="2" max="24" value="2" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Mês Inicial (Vencimento dia 5)</label>
+                        <input type="month" id="mesGasto" required class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-rose-600 text-white p-2 rounded-lg font-semibold hover:bg-rose-700 transition">Salvar Gasto</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Seção de Gráficos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Gráfico de Balanço Mensal -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-slate-700">Balanço Mensal (Ganhos vs Gastos)</h2>
+                <div class="relative h-72">
+                    <canvas id="graficoFinanceiro"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico de Pizza por Ramo -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-slate-700">Gastos por Ramo</h2>
+                    <input type="month" id="mesFiltroPizza" class="p-1 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="atualizarGraficoPizza()">
+                </div>
+                <div class="relative h-72 flex justify-center items-center">
+                    <canvas id="graficoPizza"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Exportar PDF -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8 no-print">
+            <h2 class="text-xl font-semibold mb-4 text-slate-700">🖨️ Salvar Relatório em PDF</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Filtro do Relatório</label>
+                    <select id="tipoPdf" class="w-full mt-1 p-2 border border-slate-300 rounded-lg" onchange="toggleFiltroPdf()">
+                        <option value="mes">Mês Específico</option>
+                        <option value="ano">Ano Completo</option>
+                        <option value="todos">Todos os Registros</option>
+                    </select>
+                </div>
+                <div id="divFiltroMes">
+                    <label class="block text-sm font-medium text-slate-700">Escolha o Mês</label>
+                    <input type="month" id="pdfMes" class="w-full mt-1 p-2 border border-slate-300 rounded-lg">
+                </div>
+                <div id="divFiltroAno" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700">Escolha o Ano</label>
+                    <input type="number" id="pdfAno" min="2020" max="2035" value="2026" class="w-full mt-1 p-2 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <button onclick="gerarPdfRelatorio()" class="w-full bg-indigo-600 text-white p-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Gerar PDF / Imprimir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Lançamentos -->
+        <div class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
+            <div class="flex justify-between items-center mb-4 no-print">
+                <h2 class="text-xl font-semibold text-slate-700">Histórico de Lançamentos</h2>
+                <button onclick="limparDados()" class="text-sm text-red-500 hover:underline">Limpar Tudo</button>
+            </div>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-600 text-sm">
+                        <th class="p-3 text-center">Pago?</th>
+                        <th class="p-3">Data</th>
+                        <th class="p-3">Tipo</th>
+                        <th class="p-3">Descrição</th>
+                        <th class="p-3">Ramo</th>
+                        <th class="p-3">Valor</th>
+                        <th class="p-3 no-print text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaLancamentos" class="divide-y divide-slate-100">
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal de Edição de Lançamento -->
+    <div id="modalEdicao" class="fixed inset-0 bg-black/50 hidden flex justify-center items-center z-50 no-print">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+            <h2 class="text-xl font-semibold mb-4 text-slate-700">Editar Lançamento</h2>
+            <form id="formEdicao" class="space-y-4">
+                <input type="hidden" id="editId">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Descrição</label>
+                    <input type="text" id="editDesc" required class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Valor (R$)</label>
+                        <input type="number" step="0.01" id="editValor" required class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Ramo</label>
+                        <select id="editRamo" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <!-- Preenchido via JS -->
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Data (Vencimento)</label>
+                    <input type="date" id="editData" required class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="fecharModalEdicao()" class="px-4 py-2 bg-slate-200 rounded-lg font-semibold hover:bg-slate-300">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Gerenciamento de Categorias -->
+    <div id="modalCategorias" class="fixed inset-0 bg-black/50 hidden flex justify-center items-center z-50 no-print">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+            <h2 class="text-xl font-semibold mb-4 text-slate-700">Gerenciar Ramos / Categorias</h2>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="novoRamoInput" placeholder="Nome do novo ramo..." class="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button onclick="adicionarRamo()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 whitespace-nowrap">Adicionar</button>
+            </div>
+            <div class="max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-2 mb-4">
+                <ul id="listaCategoriasModal" class="divide-y divide-slate-100">
+                    <!-- Preenchido via JS -->
+                </ul>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="fecharModalCategorias()" class="px-4 py-2 bg-slate-200 rounded-lg font-semibold hover:bg-slate-300">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script da Aplicação -->
+    <script>
+        let dados = JSON.parse(localStorage.getItem('finance_data')) || [];
+        let ramos = JSON.parse(localStorage.getItem('finance_ramos')) || [
+            'Alimentação', 'Moradia', 'Transporte', 'Lazer', 'Saúde', 
+            'Educação', 'Escola', 'Padel', 'Roupas', 'Bebê', 'Poupança', 'Assinaturas', 'Outros'
+        ];
+
+        let meuGraficoBarra = null;
+        let meuGraficoPizza = null;
+
+        const hoje = new Date();
+        const anoMesAtual = hoje.toISOString().slice(0, 7);
+        document.getElementById('mesGanho').value = anoMesAtual;
+        document.getElementById('mesGasto').value = anoMesAtual;
+        document.getElementById('mesFiltroPizza').value = anoMesAtual;
+        document.getElementById('pdfMes').value = anoMesAtual;
+        document.getElementById('pdfAno').value = hoje.getFullYear();
+
+        function atualizarSelectsRamos() {
+            const selects = [document.getElementById('ramoGasto'), document.getElementById('editRamo')];
+            
+            selects.forEach(select => {
+                const valorAtual = select.value;
+                select.innerHTML = '';
+                
+                // Adicionar "Entrada" fixo caso precise para edição
+                if (select.id === 'editRamo') {
+                    const opt = document.createElement('option');
+                    opt.value = 'Entrada';
+                    opt.textContent = 'Entrada';
+                    select.appendChild(opt);
+                }
+
+                ramos.forEach(ramo => {
+                    const option = document.createElement('option');
+                    option.value = ramo;
+                    option.textContent = ramo;
+                    select.appendChild(option);
+                });
+
+                if (valorAtual && Array.from(select.options).some(o => o.value === valorAtual)) {
+                    select.value = valorAtual;
+                }
+            });
+        }
+
+        function abrirModalCategorias() {
+            atualizarListaModalCategorias();
+            document.getElementById('modalCategorias').classList.remove('hidden');
+        }
+
+        function fecharModalCategorias() {
+            document.getElementById('modalCategorias').classList.add('hidden');
+        }
+
+        function atualizarListaModalCategorias() {
+            const ul = document.getElementById('listaCategoriasModal');
+            ul.innerHTML = '';
+
+            ramos.forEach((ramo, index) => {
+                ul.innerHTML += `
+                    <li class="flex justify-between items-center py-2 px-1 hover:bg-slate-50 rounded">
+                        <span class="text-slate-700 font-medium">${ramo}</span>
+                        <button onclick="excluirRamo(${index})" class="text-red-500 hover:text-red-700 text-sm font-semibold">Excluir</button>
+                    </li>
+                `;
+            });
+        }
+
+        function adicionarRamo() {
+            const input = document.getElementById('novoRamoInput');
+            const nome = input.value.trim();
+
+            if (!nome) return;
+
+            if (ramos.includes(nome)) {
+                alert('Este ramo já existe.');
+                return;
+            }
+
+            ramos.push(nome);
+            localStorage.setItem('finance_ramos', JSON.stringify(ramos));
+            input.value = '';
+            atualizarSelectsRamos();
+            atualizarListaModalCategorias();
+        }
+
+        function excluirRamo(index) {
+            if (ramos.length <= 1) {
+                alert('Você precisa manter ao menos uma categoria.');
+                return;
+            }
+
+            const ramoExcluido = ramos[index];
+            if (confirm(`Deseja realmente excluir o ramo "${ramoExcluido}"?`)) {
+                ramos.splice(index, 1);
+                localStorage.setItem('finance_ramos', JSON.stringify(ramos));
+                atualizarSelectsRamos();
+                atualizarListaModalCategorias();
+            }
+        }
+
+        function toggleOpcoesGanho() {
+            const tipo = document.getElementById('tipoGanho').value;
+            const divQtd = document.getElementById('divQtdGanho');
+            if (tipo === 'unico') {
+                divQtd.classList.add('hidden');
+            } else {
+                divQtd.classList.remove('hidden');
+            }
+        }
+
+        function toggleOpcoesGasto() {
+            const tipo = document.getElementById('tipoGasto').value;
+            const divQtd = document.getElementById('divQtd');
+            const labelQtd = document.getElementById('labelQtd');
+
+            if (tipo === 'unico') {
+                divQtd.classList.add('hidden');
+            } else {
+                divQtd.classList.remove('hidden');
+                labelQtd.innerText = tipo === 'parcelado' ? 'Qtd. Parcelas (Max 24)' : 'Qtd. Meses (Max 24)';
+            }
+        }
+
+        function toggleFiltroPdf() {
+            const tipo = document.getElementById('tipoPdf').value;
+            const divMes = document.getElementById('divFiltroMes');
+            const divAno = document.getElementById('divFiltroAno');
+
+            if (tipo === 'mes') {
+                divMes.classList.remove('hidden');
+                divAno.classList.add('hidden');
+            } else if (tipo === 'ano') {
+                divMes.classList.add('hidden');
+                divAno.classList.remove('hidden');
+            } else {
+                divMes.classList.add('hidden');
+                divAno.classList.add('hidden');
+            }
+        }
+
+        // Adicionar Ganho
+        document.getElementById('formGanho').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const desc = document.getElementById('descGanho').value.trim();
+            const valorInformado = parseFloat(document.getElementById('valorGanho').value);
+            const tipoGanho = document.getElementById('tipoGanho').value;
+            const mesInicial = document.getElementById('mesGanho').value;
+
+            if (!desc || isNaN(valorInformado) || !mesInicial) return;
+
+            let [ano, mes] = mesInicial.split('-').map(Number);
+
+            if (tipoGanho === 'unico') {
+                dados.push({
+                    id: Date.now() + Math.random(),
+                    tipo: 'Ganho',
+                    descricao: desc,
+                    valor: valorInformado,
+                    ramo: 'Entrada',
+                    data: `${mesInicial}-05`,
+                    pago: false
+                });
+            } else {
+                let qtd = parseInt(document.getElementById('qtdMesesGanho').value);
+                if (isNaN(qtd) || qtd < 2) qtd = 2;
+                if (qtd > 24) qtd = 24;
+
+                for (let i = 0; i < qtd; i++) {
+                    let mesStr = String(mes).padStart(2, '0');
+                    let anoStr = String(ano);
+                    let descricaoFinal = `${desc} (${i + 1}/${qtd})`;
+
+                    dados.push({
+                        id: Date.now() + Math.random() + i,
+                        tipo: 'Ganho',
+                        descricao: descricaoFinal,
+                        valor: valorInformado,
+                        ramo: 'Entrada',
+                        data: `${anoStr}-${mesStr}-05`,
+                        pago: false
+                    });
+
+                    mes++;
+                    if (mes > 12) {
+                        mes = 1;
+                        ano++;
+                    }
+                }
+            }
+
+            salvarEEatualizar();
+            this.reset();
+            document.getElementById('mesGanho').value = anoMesAtual;
+            toggleOpcoesGanho();
+        });
+
+        // Adicionar Gasto
+        document.getElementById('formGasto').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const desc = document.getElementById('descGasto').value.trim();
+            const valorInformado = parseFloat(document.getElementById('valorGasto').value);
+            const ramo = document.getElementById('ramoGasto').value;
+            const tipoGasto = document.getElementById('tipoGasto').value;
+            const mesInicial = document.getElementById('mesGasto').value;
+
+            if (!desc || isNaN(valorInformado) || !mesInicial) return;
+
+            let [ano, mes] = mesInicial.split('-').map(Number);
+
+            if (tipoGasto === 'unico') {
+                dados.push({
+                    id: Date.now() + Math.random(),
+                    tipo: 'Gasto',
+                    descricao: desc,
+                    valor: valorInformado,
+                    ramo: ramo,
+                    data: `${mesInicial}-05`,
+                    pago: false
+                });
+            } else {
+                let qtd = parseInt(document.getElementById('qtdMeses').value);
+                if (isNaN(qtd) || qtd < 2) qtd = 2;
+                if (qtd > 24) qtd = 24;
+
+                for (let i = 0; i < qtd; i++) {
+                    let mesStr = String(mes).padStart(2, '0');
+                    let anoStr = String(ano);
+                    
+                    let valorFinal = tipoGasto === 'parcelado' ? valorInformado / qtd : valorInformado;
+                    let descricaoFinal = `${desc} (${i + 1}/${qtd})`;
+
+                    dados.push({
+                        id: Date.now() + Math.random() + i,
+                        tipo: 'Gasto',
+                        descricao: descricaoFinal,
+                        valor: valorFinal,
+                        ramo: ramo,
+                        data: `${anoStr}-${mesStr}-05`,
+                        pago: false
+                    });
+
+                    mes++;
+                    if (mes > 12) {
+                        mes = 1;
+                        ano++;
+                    }
+                }
+            }
+
+            salvarEEatualizar();
+            this.reset();
+            document.getElementById('mesGasto').value = anoMesAtual;
+            toggleOpcoesGasto();
+        });
+
+        function toggleStatusPago(id) {
+            const item = dados.find(i => i.id === id);
+            if (item) {
+                item.pago = !item.pago;
+                salvarEEatualizar();
+            }
+        }
+
+        function abrirModalEdicao(id) {
+            const item = dados.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('editId').value = item.id;
+            document.getElementById('editDesc').value = item.descricao;
+            document.getElementById('editValor').value = item.valor;
+            document.getElementById('editRamo').value = item.ramo;
+            document.getElementById('editData').value = item.data;
+
+            document.getElementById('modalEdicao').classList.remove('hidden');
+        }
+
+        function fecharModalEdicao() {
+            document.getElementById('modalEdicao').classList.add('hidden');
+        }
+
+        document.getElementById('formEdicao').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = parseFloat(document.getElementById('editId').value);
+            const item = dados.find(i => i.id === id);
+
+            if (item) {
+                item.descricao = document.getElementById('editDesc').value.trim();
+                item.valor = parseFloat(document.getElementById('editValor').value);
+                item.ramo = document.getElementById('editRamo').value;
+                item.data = document.getElementById('editData').value;
+
+                salvarEEatualizar();
+                fecharModalEdicao();
+            }
+        });
+
+        function excluirItem(id) {
+            dados = dados.filter(item => item.id !== id);
+            salvarEEatualizar();
+        }
+
+        function limparDados() {
+            if (confirm('Deseja realmente apagar todos os registros?')) {
+                dados = [];
+                salvarEEatualizar();
+            }
+        }
+
+        function salvarEEatualizar() {
+            localStorage.setItem('finance_data', JSON.stringify(dados));
+            atualizarTabela();
+            atualizarGraficoBarra();
+            atualizarGraficoPizza();
+        }
+
+        function atualizarTabela() {
+            const tbody = document.getElementById('tabelaLancamentos');
+            tbody.innerHTML = '';
+
+            dados.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+            if (dados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Nenhum lançamento cadastrado.</td></tr>`;
+                return;
+            }
+
+            let ultimoMesAno = '';
+
+            dados.forEach(item => {
+                const mesAnoAtual = item.data.slice(0, 7);
+
+                if (mesAnoAtual !== ultimoMesAno) {
+                    ultimoMesAno = mesAnoAtual;
+                    const [anoD, mesD] = mesAnoAtual.split('-');
+                    tbody.innerHTML += `
+                        <tr class="bg-slate-100 font-bold text-slate-700">
+                            <td colspan="7" class="p-2 px-3 border-t border-b border-slate-300 text-sm">
+                                📅 Mês: ${mesD}/${anoD}
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                const [ano, mes, dia] = item.data.split('-');
+                const dataFormatada = `${dia}/${mes}/${ano}`;
+                const corTexto = item.tipo === 'Ganho' ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold';
+                const sinal = item.tipo === 'Ganho' ? '+' : '-';
+                const checked = item.pago ? 'checked' : '';
+                const linhaOpacidade = item.pago ? 'opacity-60 bg-slate-50' : '';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100 ${linhaOpacidade}">
+                        <td class="p-3 text-center"><input type="checkbox" ${checked} onchange="toggleStatusPago(${item.id})" class="w-4 h-4 accent-indigo-600 cursor-pointer"></td>
+                        <td class="p-3">${dataFormatada}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${item.tipo === 'Ganho' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${item.tipo}</span></td>
+                        <td class="p-3 ${item.pago ? 'line-through text-slate-400' : ''}">${item.descricao}</td>
+                        <td class="p-3 text-sm text-slate-500">${item.ramo}</td>
+                        <td class="p-3 ${corTexto}">${sinal} R$ ${item.valor.toFixed(2)}</td>
+                        <td class="p-3 no-print text-center flex justify-center gap-2">
+                            <button onclick="abrirModalEdicao(${item.id})" class="text-blue-500 hover:text-blue-700 text-sm font-semibold">Editar</button>
+                            <button onclick="excluirItem(${item.id})" class="text-red-400 hover:text-red-600 text-sm font-semibold">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function atualizarGraficoBarra() {
+            const mesesMap = {};
+
+            dados.forEach(item => {
+                const mesAno = item.data.slice(0, 7);
+                if (!mesesMap[mesAno]) {
+                    mesesMap[mesAno] = { ganhos: 0, gastos: 0 };
+                }
+                if (item.tipo === 'Ganho') {
+                    mesesMap[mesAno].ganhos += item.valor;
+                } else {
+                    mesesMap[mesAno].gastos += item.valor;
+                }
+            });
+
+            const mesesOrdenados = Object.keys(mesesMap).sort();
+            const ganhosArr = mesesOrdenados.map(m => mesesMap[m].ganhos);
+            const gastosArr = mesesOrdenados.map(m => mesesMap[m].gastos);
+            const labelsFormatadas = mesesOrdenados.map(m => {
+                const [ano, mes] = m.split('-');
+                return `${mes}/${ano}`;
+            });
+
+            const ctx = document.getElementById('graficoFinanceiro').getContext('2d');
+            if (meuGraficoBarra) meuGraficoBarra.destroy();
+
+            meuGraficoBarra = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labelsFormatadas,
+                    datasets: [
+                        { label: 'Ganhos', data: ganhosArr, backgroundColor: '#10b981', borderRadius: 6 },
+                        { label: 'Gastos', data: gastosArr, backgroundColor: '#f43f5e', borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function atualizarGraficoPizza() {
+            const mesSelecionado = document.getElementById('mesFiltroPizza').value;
+            const ramosMap = {};
+
+            dados.forEach(item => {
+                if (item.tipo === 'Gasto' && item.data.slice(0, 7) === mesSelecionado) {
+                    ramosMap[item.ramo] = (ramosMap[item.ramo] || 0) + item.valor;
+                }
+            });
+
+            const ramosAtivos = Object.keys(ramosMap);
+            const valores = Object.values(ramosMap);
+
+            const ctx = document.getElementById('graficoPizza').getContext('2d');
+            if (meuGraficoPizza) meuGraficoPizza.destroy();
+
+            meuGraficoPizza = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ramosAtivos.length > 0 ? ramosAtivos : ['Nenhum gasto neste mês'],
+                    datasets: [{
+                        data: ramosAtivos.length > 0 ? valores : [1],
+                        backgroundColor: ramosAtivos.length > 0 ? 
+                            ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b', '#14b8a6', '#6366f1', '#84cc16', '#a855f7', '#06b6d4', '#eab308'] : 
+                            ['#e2e8f0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function fazerBackup() {
+            const backupObj = {
+                dados: dados,
+                ramos: ramos
+            };
+            const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_financeiro_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function restaurarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const conteudo = JSON.parse(e.target.result);
+                    if (Array.isArray(conteudo)) {
+                        // Compatibilidade com arquivos de backup antigos apenas com lançamentos
+                        dados = conteudo;
+                    } else if (conteudo.dados && Array.isArray(conteudo.dados)) {
+                        dados = conteudo.dados;
+                        if (conteudo.ramos && Array.isArray(conteudo.ramos)) {
+                            ramos = conteudo.ramos;
+                            localStorage.setItem('finance_ramos', JSON.stringify(ramos));
+                        }
+                    } else {
+                        alert('Arquivo de backup inválido.');
+                        return;
+                    }
+                    salvarEEatualizar();
+                    atualizarSelectsRamos();
+                    alert('Backup restaurado com sucesso!');
+                } catch (err) {
+                    alert('Erro ao ler o arquivo JSON.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function gerarPdfRelatorio() {
+            window.print();
+        }
+
+        // Inicialização
+        atualizarSelectsRamos();
+        atualizarTabela();
+        atualizarGraficoBarra();
+        atualizarGraficoPizza();
+    </script>
+</body>
+</html>
